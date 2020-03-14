@@ -1,0 +1,42 @@
+import requests
+import json
+from flask import Flask
+from flask_cors import CORS
+
+api = Flask(__name__)
+CORS(api)
+
+@api.route('/servers', methods=['GET'])
+def get_servers():
+    baseURL = "URL Here"
+    deviceURL = "dcim/devices/?tenant=tyler"
+    vmURL = "virtualization/virtual-machines/?cluster_id="
+    headers = {'Authorization': 'Token Token Here'}
+    #print(url + devices)
+    reqHard = requests.get(url=baseURL+deviceURL, headers=headers)
+
+    dataHard = reqHard.json()
+    #print(dataHard)
+    servers = []
+
+    for item in dataHard['results']:
+        server = {'name': item['name']}
+        server['device'] = item['device_type']['display_name']
+        server['role'] = item['device_role']['name']
+        server['comments'] = item['comments']
+        if item['cluster'] is not None:
+            reqVms = requests.get(url=baseURL+vmURL+str(item['cluster']['id']), headers=headers)
+            dataVm = reqVms.json()
+            vms = []
+            # print(dataVm)
+            for vm in dataVm['results']:
+                VM = {'name': vm['name']}
+                VM['role'] = vm['role']['name']
+                vms.append(VM)
+            server['vm'] = vms
+        servers.append(server)
+    return json.dumps(servers)
+
+
+if __name__ == '__main__':
+    api.run()
